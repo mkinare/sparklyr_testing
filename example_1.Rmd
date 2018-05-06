@@ -1,0 +1,62 @@
+---
+title: "sparklyr example_1"
+author: "Kinare, Mayuresh"
+date: "5/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo=TRUE}
+source('/mnt/d/gitRepoCheckout/sparklyr_testing/dependencies_libraries.R')
+```
+
+## sparklyr example_1
+
+This is an example from http://spark.rstudio.com/
+
+
+Connecting to spark using sparklyr
+```{r}
+sc <- spark_connect(master = "local")
+```
+
+***
+
+Using dplyr to copy over tables to the spark
+```{r}
+#Copying iris
+iris_tbl <- copy_to(sc, iris)
+
+#Copying flights
+flights_tbl <- copy_to(sc, nycflights13::flights, "flights")
+
+#Copying batting
+batting_tbl <- copy_to(sc, Lahman::Batting, "batting")
+
+#Looking at what tables are availabe
+src_tbls(sc)
+```
+***
+
+We are going to use some dplyr syntax to filter some data
+```{r}
+# filter by departure delay and print the first few records
+flights_tbl %>% filter(dep_delay == 2)
+```
+
+***
+
+Plotting delays
+```{r}
+delay <- flights_tbl %>% 
+  group_by(tailnum) %>%
+  summarise(count = n(), dist = mean(distance), delay = mean(arr_delay)) %>%
+  filter(count > 20, dist < 2000, !is.na(delay)) %>%
+  collect
+
+# plot delays
+ggplot(delay, aes(dist, delay)) +
+  geom_point(aes(size = count), alpha = 1/2) +
+  geom_smooth() +
+  scale_size_area(max_size = 2)
+```
+
